@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -22,36 +23,47 @@ public class RewardsController {
 	public @ResponseBody ResponseEntity<String> getRewards(@RequestBody String request) {
 		JSONArray custTransactionArr = new JSONArray(request);
 		JSONArray rewardsArr = new JSONArray();
-		for(Object custTransaction : custTransactionArr) {
+		for (Object custTransaction : custTransactionArr) {
 			rewardsArr.put(calculateRewards((JSONObject) custTransaction));
 		}
 		return ResponseEntity.ok().body(rewardsArr.toString());
 	}
-	
+
 	private JSONObject calculateRewards(JSONObject custTransaction) {
 		String customer = (String) custTransaction.get("customer");
 		JSONArray transactions = (JSONArray) custTransaction.get("transactions");
-		
+
 		HashMap<String, Integer> monthPoints = new HashMap<>();
 		int totalPoints = 0;
-		System.out.println(customer + transactions);
-		
+
 		for (Object transaction : transactions) {
 			String date = (String) ((JSONObject) transaction).get("date");
 			String price = (String) ((JSONObject) transaction).get("price");
 			String month = getMonth(date);
 			int points = calculatePoints(price);
-			if(monthPoints.containsKey(month))
+			if (monthPoints.containsKey(month))
 				monthPoints.put(month, monthPoints.get(month) + points);
 			else
 				monthPoints.put(month, points);
-			
+
 			totalPoints += points;
-			System.out.println(month + points);
 		}
-		return null;
+
+		// build rewards jsonobj
+		JSONObject rewardsObj = new JSONObject();
+		rewardsObj.put("customer", customer);
+		rewardsObj.put("total", totalPoints);
+		JSONArray monthPointsArr = new JSONArray();
+		for (Map.Entry<String, Integer> entry : monthPoints.entrySet()) {
+			JSONObject monthPointsObj = new JSONObject();
+			monthPointsObj.put("month", entry.getKey());
+			monthPointsObj.put("points", entry.getValue());
+			monthPointsArr.put(monthPointsObj);
+		}
+		rewardsObj.put("rewards", monthPointsArr);
+		return rewardsObj;
 	}
-	
+
 	private String getMonth(String date) {
 		SimpleDateFormat in = new SimpleDateFormat("MM/dd/yyyy");
 		SimpleDateFormat out = new SimpleDateFormat("MM");
@@ -63,7 +75,7 @@ public class RewardsController {
 			return "UNKNOWN";
 		}
 	}
-	
+
 	private int calculatePoints(String price) {
 		// Remove '$'
 		String formattedPrice = price.substring(1);
