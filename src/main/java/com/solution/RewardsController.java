@@ -86,9 +86,9 @@ public class RewardsController {
 			return 0;
 		}
 
-		if (x >= 100) {
+		if (x > 100) {
 			return 2 * (x - 100) + 50;
-		} else if (x >= 50) {
+		} else if (x > 50) {
 			return (x - 50);
 		} else {
 			return 0;
